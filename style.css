@@ -146,3 +146,60 @@ body {
 #game-over-restart {
     margin-top: 10px;
 }
+
+.virtual-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    margin-top: 20px;
+    padding: 0 10px;
+}
+
+.virtual-btn {
+    flex: 1;
+    min-height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s;
+    font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.virtual-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.virtual-btn:active,
+.virtual-btn.active {
+    transform: translateY(0) scale(0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #5568d3 0%, #653a91 100%);
+}
+
+.btn-symbol {
+    font-size: 2.5em;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1;
+}
+
+.virtual-btn-space .btn-symbol {
+    font-size: 1.8em;
+}
+
+.virtual-btn-e .btn-symbol {
+    font-size: 2.5em;
+}

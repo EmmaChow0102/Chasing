@@ -26,10 +26,6 @@ class Game {
         this.bgm = null;
         this.initBGM();
         
-        // 躲藏点图片
-        this.hideImage = null;
-        this.loadHideImage();
-        
         // 每日运势词条库
         this.fortuneMessages = [
             '今日财运亨通，适合投资理财',
@@ -59,12 +55,9 @@ class Game {
             new Chengguan(650 * scaleX, 450 * scaleY),
             new Chengguan(650 * scaleX, 150 * scaleY)
         ];
-        // 玩家的尺寸（radius * 2 = 40x40）
-        const playerSize = 20 * 2; // 玩家半径20，所以尺寸是40
-        
         this.hidingSpots = [
-            new HidingSpot(150 * scaleX, 450 * scaleY, playerSize),
-            new HidingSpot(400 * scaleX, 150 * scaleY, playerSize)
+            new HidingSpot(150 * scaleX, 450 * scaleY, 80 * scaleX, 60 * scaleY),
+            new HidingSpot(400 * scaleX, 150 * scaleY, 80 * scaleX, 60 * scaleY)
         ];
         this.buffs = [
             new Buff(200 * scaleX, 300 * scaleY, 'berserk', '狂暴攻击'),
@@ -117,9 +110,15 @@ class Game {
         // 点击游戏画布时也尝试播放背景音乐
         this.canvas.addEventListener('click', tryPlayBGM);
         
+        // 保存tryPlayBGM方法供虚拟按键使用
+        this.tryPlayBGM = tryPlayBGM;
+        
         document.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
         });
+        
+        // 设置虚拟按键事件
+        this.setupVirtualButtons();
         
         document.getElementById('restartBtn').addEventListener('click', () => this.restart());
         document.getElementById('game-over-restart').addEventListener('click', () => {
@@ -167,16 +166,57 @@ class Game {
         });
     }
     
-    loadHideImage() {
-        // 加载躲藏点图片
-        const hideImg = new Image();
-        hideImg.onload = () => {
-            this.hideImage = hideImg;
-        };
-        hideImg.onerror = () => {
-            console.error('躲藏点图片加载失败: sucai_tinify/item_hide_01.png');
-        };
-        hideImg.src = 'sucai_tinify/item_hide_01.png';
+    setupVirtualButtons() {
+        // 获取所有虚拟按键
+        const virtualButtons = document.querySelectorAll('.virtual-btn');
+        
+        virtualButtons.forEach(btn => {
+            const keyCode = btn.getAttribute('data-key');
+            
+            // 鼠标/触摸按下事件
+            const handleStart = (e) => {
+                e.preventDefault();
+                // 尝试播放背景音乐
+                if (this.tryPlayBGM) {
+                    this.tryPlayBGM();
+                }
+                
+                btn.classList.add('active');
+                
+                if (keyCode === 'Space') {
+                    this.tryHide();
+                } else if (keyCode === 'KeyE') {
+                    this.tryPickupBuff();
+                } else {
+                    // 方向键
+                    this.keys[keyCode] = true;
+                }
+            };
+            
+            // 鼠标/触摸释放事件
+            const handleEnd = (e) => {
+                e.preventDefault();
+                btn.classList.remove('active');
+                
+                if (keyCode === 'Space' || keyCode === 'KeyE') {
+                    // 功能键不需要处理释放
+                    return;
+                } else {
+                    // 方向键
+                    this.keys[keyCode] = false;
+                }
+            };
+            
+            // 鼠标事件
+            btn.addEventListener('mousedown', handleStart);
+            btn.addEventListener('mouseup', handleEnd);
+            btn.addEventListener('mouseleave', handleEnd); // 鼠标移出时也释放
+            
+            // 触摸事件（移动设备）
+            btn.addEventListener('touchstart', handleStart, { passive: false });
+            btn.addEventListener('touchend', handleEnd, { passive: false });
+            btn.addEventListener('touchcancel', handleEnd, { passive: false });
+        });
     }
     
     tryHide() {
@@ -204,7 +244,9 @@ class Game {
                 Math.pow(this.player.x - buff.x, 2) + 
                 Math.pow(this.player.y - buff.y, 2)
             );
-            if (dist < 40) {
+            // 调整拾取距离以适应更大的道具尺寸
+            const pickupDistance = buff.radius * 1.2;
+            if (dist < pickupDistance) {
                 this.activateBuff(buff.type);
                 this.buffs.splice(i, 1);
                 return;
@@ -334,7 +376,7 @@ class Game {
         
         // 绘制隐藏点
         for (let spot of this.hidingSpots) {
-            spot.draw(this.ctx, this.hideImage);
+            spot.draw(this.ctx);
         }
         
         // 绘制增益道具
@@ -417,12 +459,6 @@ class Game {
         this.chengguans = [
             new Chengguan(650 * scaleX, 450 * scaleY),
             new Chengguan(650 * scaleX, 150 * scaleY)
-        ];
-        // 玩家的尺寸（radius * 2 = 40x40）
-        const playerSize = 20 * 2; // 玩家半径20，所以尺寸是40
-        this.hidingSpots = [
-            new HidingSpot(150 * scaleX, 450 * scaleY, playerSize),
-            new HidingSpot(400 * scaleX, 150 * scaleY, playerSize)
         ];
         this.buffs = [
             new Buff(200 * scaleX, 300 * scaleY, 'berserk', '狂暴攻击'),
@@ -608,40 +644,28 @@ class Chengguan {
 
 // 隐藏点类
 class HidingSpot {
-    constructor(x, y, size) {
+    constructor(x, y, width, height) {
         this.x = x;
         this.y = y;
-        this.size = size; // 尺寸与玩家相同（40x40）
+        this.width = width;
+        this.height = height;
     }
     
-    draw(ctx, hideImage) {
-        // 如果图片已加载且完整，使用图片绘制
-        if (hideImage && hideImage.complete && hideImage.naturalWidth > 0) {
-            try {
-                ctx.drawImage(
-                    hideImage,
-                    this.x - this.size / 2,
-                    this.y - this.size / 2,
-                    this.size,
-                    this.size
-                );
-                return; // 成功绘制图片，直接返回
-            } catch (e) {
-                console.warn('绘制躲藏点图片失败，使用后备方案:', e);
-            }
-        }
-        
-        // 如果图片未加载或绘制失败，使用默认绘制（后备方案）
+    draw(ctx) {
         ctx.fillStyle = '#444';
-        ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
         ctx.strokeStyle = '#666';
         ctx.lineWidth = 2;
-        ctx.strokeRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        ctx.strokeRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+        
+        // 计算字体大小，确保不超出UI范围
+        const fontSize = Math.min(this.height * 0.4, this.width * 0.25, 18); // 限制字体大小
         
         ctx.fillStyle = 'white';
-        ctx.font = '12px Arial';
+        ctx.font = `bold ${fontSize}px Arial, sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillText('隐藏点', this.x, this.y + 5);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('HIDE', this.x, this.y);
     }
 }
 
@@ -650,30 +674,74 @@ class Buff {
     constructor(x, y, type, name) {
         this.x = x;
         this.y = y;
-        this.radius = 20;
+        this.radius = 50; // 调大尺寸
         this.type = type;
         this.name = name;
         this.pulse = 0;
+        // 根据类型设置显示文本
+        this.displayText = type === 'speed' ? '速' : (type === 'disguise' ? '装' : '攻');
     }
     
     draw(ctx) {
         this.pulse += 0.1;
-        const size = this.radius + Math.sin(this.pulse) * 3;
+        const rotation = this.pulse * 0.5; // 旋转动画
         
-        // 绘制三角形
-        ctx.fillStyle = '#8B4513';
+        // 按钮尺寸（调大）
+        const buttonWidth = this.radius * 2;
+        const buttonHeight = this.radius * 1.4;
+        const borderRadius = this.radius * 0.3;
+        const shadowOffset = 6; // 阴影偏移
+        
+        // 保存上下文状态
+        ctx.save();
+        
+        // 移动到道具位置并应用旋转
+        ctx.translate(this.x, this.y);
+        ctx.rotate(rotation);
+        
+        // 绘制阴影（按钮下方）
+        ctx.fillStyle = '#d35400';
         ctx.beginPath();
-        ctx.moveTo(this.x, this.y - size);
-        ctx.lineTo(this.x - size, this.y + size);
-        ctx.lineTo(this.x + size, this.y + size);
-        ctx.closePath();
+        this.roundedRect(ctx, -buttonWidth/2, buttonHeight/2, buttonWidth, shadowOffset, borderRadius);
         ctx.fill();
         
-        // 绘制名称
-        ctx.fillStyle = 'white';
-        ctx.font = '10px Arial';
+        // 绘制边框
+        ctx.strokeStyle = '#f39c12';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        this.roundedRect(ctx, -buttonWidth/2, -buttonHeight/2, buttonWidth, buttonHeight, borderRadius);
+        ctx.stroke();
+        
+        // 绘制按钮背景
+        ctx.fillStyle = '#e67e22';
+        ctx.beginPath();
+        this.roundedRect(ctx, -buttonWidth/2, -buttonHeight/2, buttonWidth, buttonHeight, borderRadius);
+        ctx.fill();
+        
+        // 绘制文字
+        ctx.fillStyle = '#ecf0f1';
+        ctx.font = `${this.radius * 0.7}px 'Microsoft YaHei', Arial, sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillText(this.name, this.x, this.y + 30);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.displayText, 0, 0);
+        
+        // 恢复上下文状态
+        ctx.restore();
+    }
+    
+    // 绘制圆角矩形辅助方法
+    roundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
     }
 }
 
