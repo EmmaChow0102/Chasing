@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哈基米的占卜摊 - 哈基米的占卜摊逃生游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🐱 哈基米的占卜摊</h1>
+            <div class="game-info">
+                <div class="info-item">
+                    <span>状态: </span>
+                    <span id="game-status">游戏中</span>
+                </div>
+                <div class="info-item">
+                    <span>收集牌: </span>
+                    <span id="collection-count">0/3</span>
+                </div>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas" width="1242" height="2208"></canvas>
+        
+        <div class="game-controls">
+            <div class="controls-info">
+                <p><strong>操作说明:</strong></p>
+                <p>WASD 或 方向键: 移动 | 空格: 使用隐藏点 | E: 拾取道具</p>
+            </div>
+            <button id="restartBtn" class="btn">重新开始</button>
+        </div>
+        
+        <div id="game-over" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="game-over-title">游戏结束</h2>
+                <p id="game-over-message"></p>
+                <button id="game-over-restart" class="btn">再来一局</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
